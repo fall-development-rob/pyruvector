@@ -60,6 +60,7 @@ Traditional vector databases just store and search. When you ask "find similar i
 | **Semantic Router** | Route queries to optimal endpoints | Multi-model AI orchestration |
 | **Tiny Dancer** | FastGRNN neural inference | Optimize LLM inference costs |
 | **Adaptive Routing** | Learn optimal routing strategies | Minimize latency, maximize accuracy |
+| **SciPix OCR** | Extract math equations from images | LaTeX/MathML output for scientific docs |
 
 ## Comparison with Alternatives
 
@@ -125,12 +126,45 @@ results = db.search(
 )
 ```
 
+### Scientific Document OCR (SciPix)
+```python
+from pyruvector import SciPixOCR
+
+# Extract equations from scientific papers
+ocr = SciPixOCR()
+
+# Convert image to LaTeX
+latex = ocr.ocr_image("equation.png", format="latex")
+print(f"LaTeX: {latex}")  # \frac{1}{2}mv^2
+
+# Extract all equations from a document
+equations = ocr.extract_equations("research_paper.pdf")
+for eq in equations:
+    print(f"Equation: {eq}")
+
+# Get MathML output
+mathml = ocr.ocr_image("formula.jpg", format="mathml")
+```
+
 ## Installation
 
 ### From PyPI (Recommended)
 
 ```bash
 pip install pyruvector
+```
+
+### Optional Features
+
+```bash
+# Install with SciPix OCR support (scientific document processing)
+pip install pyruvector[scipix]
+
+# Install with embedded HTTP server
+pip install pyruvector[server]
+
+# Install all optional features
+pip install pyruvector[full]
 ```
 
 ### From Source
@@ -824,7 +858,7 @@ Source distribution (sdist) is also available for custom builds.
 
 | pyruvector | Python | rUvector Ecosystem | Status |
 |------------|--------|-------------------|--------|
-| 0.1.x      | 3.9+   | 11 crates        | Beta   |
+| 0.1.x      | 3.9+   | 14 crates (12 core + 2 optional) | Beta |
 
 ## Contributing
 
@@ -889,19 +923,22 @@ This Rob-otix Ai Ltd version includes enhancements and optimizations for product
 
 pyruvector provides Python bindings for the complete rUvector Rust ecosystem:
 
-| Crate | Purpose |
-|-------|---------|
-| `ruvector-core` | Core vector operations, HNSW index, SIMD acceleration |
-| `ruvector-collections` | Multi-tenancy, namespace isolation |
-| `ruvector-filter` | Advanced metadata filtering |
-| `ruvector-metrics` | Prometheus metrics, observability |
-| `ruvector-snapshot` | Point-in-time backup and restore |
-| `ruvector-graph` | Graph database, Cypher queries, hyperedges |
-| `ruvector-gnn` | Graph Neural Networks, adaptive search |
-| `ruvector-cluster` | Distributed clustering, coordination |
-| `ruvector-raft` | Raft consensus, leader election |
-| `ruvector-replication` | Multi-master replication |
-| `router-core` + `tiny-dancer-core` | AI routing, FastGRNN inference |
+| Crate | Purpose | Status |
+|-------|---------|--------|
+| `ruvector-core` | Core vector operations, HNSW index, SIMD acceleration | Included |
+| `ruvector-collections` | Multi-tenancy, namespace isolation | Included |
+| `ruvector-filter` | Advanced metadata filtering | Included |
+| `ruvector-metrics` | Prometheus metrics, observability | Included |
+| `ruvector-snapshot` | Point-in-time backup and restore | Included |
+| `ruvector-graph` | Graph database, Cypher queries, hyperedges | Included |
+| `ruvector-gnn` | Graph Neural Networks, adaptive search | Included |
+| `ruvector-cluster` | Distributed clustering, coordination | Included |
+| `ruvector-raft` | Raft consensus, leader election | Included |
+| `ruvector-replication` | Multi-master replication | Included |
+| `ruvector-router-core` | Semantic routing engine | Included |
+| `ruvector-tiny-dancer-core` | FastGRNN neural inference for AI routing | Included |
+| `ruvector-scipix` | OCR for scientific documents, math → LaTeX | Optional |
+| `ruvector-server` | Embedded HTTP/gRPC server | Optional |
 
 ## Acknowledgments
 
