@@ -1,0 +1,5 @@
+# CODEOWNERS file for pyruvector
+# These owners will be requested for review when someone opens a pull request
+
+# Global owners - will be requested for review on all changes
+* @fall-development-rob
