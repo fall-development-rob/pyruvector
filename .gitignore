@@ -58,4 +58,8 @@ Thumbs.db
 
 /.claude-flow
 
+
 *.md
+
+!README.md
+:memory:9b0b1d1b-8167-4d6b-ab4f-719eb086d355
