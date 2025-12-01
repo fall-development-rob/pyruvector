@@ -53,6 +53,9 @@ ruvector-tiny-dancer-core = "0.1.2"
 # Server (optional - for embedding REST API)
 ruvector-server = { version = "0.1.2", optional = true }
 
+# OCR for scientific documents (optional)
+ruvector-scipix = { version = "0.1.16", optional = true, features = ["ocr", "preprocess", "cache"] }
+
 # ============================================
 # Additional dependencies
 # ============================================
@@ -77,7 +80,8 @@ gnn = []
 cluster = []
 router = []
 server = ["dep:ruvector-server"]
-full = ["metrics", "snapshot", "graph", "gnn", "cluster", "router", "server"]
+scipix = ["dep:ruvector-scipix"]
+full = ["metrics", "snapshot", "graph", "gnn", "cluster", "router", "server", "scipix"]
 
 [profile.release]
 opt-level = 3

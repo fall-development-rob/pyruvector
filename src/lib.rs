@@ -19,6 +19,8 @@ mod gnn;
 mod graph;
 mod metrics;
 mod router;
+#[cfg(feature = "scipix")]
+mod scipix;
 mod snapshot;
 mod types;
 
@@ -41,6 +43,8 @@ use router::{
     TrainingConfig as RouterTrainingConfig, TrainingDataset,
     TrainingMetrics as RouterTrainingMetrics, VectorDatabase,
 };
+#[cfg(feature = "scipix")]
+use scipix::{OutputFormat, SciPixOCR};
 use snapshot::{SnapshotInfo, SnapshotManager};
 use types::{
     CollectionStats, DBStats, DbOptions, DistanceMetric, HNSWConfig, HealthStatus,
@@ -270,6 +274,13 @@ fn _pyruvector(_py: Python<'_>, m: &PyModule) -> PyResult<()> {
     m.add_class::<TrainingDataset>()?;
     m.add_class::<RouterTrainingConfig>()?;
     m.add_class::<RouterTrainingMetrics>()?;
+
+    // SciPix OCR (optional feature)
+    #[cfg(feature = "scipix")]
+    {
+        m.add_class::<SciPixOCR>()?;
+        m.add_class::<OutputFormat>()?;
+    }
 
     // GNN utility functions
     m.add_function(wrap_pyfunction!(cosine_similarity, m)?)?;
