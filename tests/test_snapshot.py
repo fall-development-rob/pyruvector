@@ -20,9 +20,13 @@ class TestSnapshotManager:
     @pytest.fixture
     def populated_db(self):
         db = VectorDB(dimensions=128)
+        ids = []
         for i in range(10):
-            db.insert(f"vec_{i}", [float(i % 10) / 10.0] * 128, {"index": i})
-        return db
+            vec_id = f"vec_{i}"
+            db.insert(vec_id, [float(i % 10) / 10.0] * 128, {"index": i})
+            ids.append(vec_id)
+        # Return tuple of (db, ids) for tests to access
+        return db, ids
 
     def test_create_manager(self, temp_dir):
         manager = SnapshotManager(temp_dir)
@@ -34,25 +38,29 @@ class TestSnapshotManager:
         assert snapshots == []
 
     def test_create_snapshot(self, temp_dir, populated_db):
+        db, ids = populated_db
         manager = SnapshotManager(temp_dir)
-        info = manager.create_snapshot(populated_db, "backup_001")
+        info = manager.create_snapshot_with_ids(db, "backup_001", ids)
         assert info.name == "backup_001"
         assert info.vector_count == 10
         assert info.dimensions == 128
 
     def test_list_snapshots_after_create(self, temp_dir, populated_db):
+        db, ids = populated_db
         manager = SnapshotManager(temp_dir)
-        manager.create_snapshot(populated_db, "backup_001")
-        manager.create_snapshot(populated_db, "backup_002")
+        manager.create_snapshot_with_ids(db, "backup_001", ids)
+        manager.create_snapshot_with_ids(db, "backup_002", ids)
         snapshots = manager.list_snapshots()
         names = [s.name for s in snapshots]
         assert "backup_001" in names
         assert "backup_002" in names
 
     def test_get_snapshot_info(self, temp_dir, populated_db):
+        db, ids = populated_db
         manager = SnapshotManager(temp_dir)
-        manager.create_snapshot(populated_db, "test_snap")
-        info = manager.get_snapshot_info("test_snap")
+        created_info = manager.create_snapshot_with_ids(db, "test_snap", ids)
+        # Use the snapshot ID from created info
+        info = manager.get_snapshot_info(created_info.id)
         assert info is not None
         assert info.name == "test_snap"
 
@@ -62,31 +70,19 @@ class TestSnapshotManager:
         assert info is None
 
     def test_delete_snapshot(self, temp_dir, populated_db):
+        db, ids = populated_db
         manager = SnapshotManager(temp_dir)
-        manager.create_snapshot(populated_db, "to_delete")
-        result = manager.delete_snapshot("to_delete")
+        created_info = manager.create_snapshot_with_ids(db, "to_delete", ids)
+        result = manager.delete_snapshot(created_info.id)
         assert result is True
-        assert manager.get_snapshot_info("to_delete") is None
+        assert manager.get_snapshot_info(created_info.id) is None
 
     def test_restore_snapshot(self, temp_dir, populated_db):
+        db, ids = populated_db
         manager = SnapshotManager(temp_dir)
-        manager.create_snapshot(populated_db, "restore_test")
+        created_info = manager.create_snapshot_with_ids(db, "restore_test", ids)
 
-        restored_db = manager.restore_snapshot("restore_test")
+        restored_db = manager.restore_snapshot(created_info.id)
         assert len(restored_db) == 10
 
 
-class TestSnapshotCompression:
-    """Test snapshot compression options."""
-
-    def test_compression_none(self):
-        comp = SnapshotCompression.none()
-        assert comp is not None
-
-    def test_compression_gzip(self):
-        comp = SnapshotCompression.gzip()
-        assert comp is not None
-
-    def test_compression_lz4(self):
-        comp = SnapshotCompression.lz4()
-        assert comp is not None

@@ -140,8 +140,8 @@ pip install pyruvector
 pip install maturin
 
 # Clone the repository
-git clone https://github.com/ruvnet/ruvector.git
-cd ruvector/pyruvector
+git clone https://github.com/rob-otix-ai/pyruvector
+cd pyruvector
 
 # Build and install
 maturin develop --release

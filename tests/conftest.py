@@ -80,8 +80,8 @@ def populated_db(tmp_path, dimensions, sample_vectors, sample_metadata):
     vectors = sample_vectors(dimensions, 10)
     metadata = sample_metadata(10)
 
-    for vec, meta in zip(vectors, metadata):
-        db.insert(vec, meta)
+    for i, (vec, meta) in enumerate(zip(vectors, metadata)):
+        db.insert(f"vec_{i}", vec.tolist(), meta)
 
     yield db
     db.close()
@@ -100,7 +100,7 @@ def create_db():
     dbs = []
 
     def _create(dimensions: int, path: str = None):
-        db = VectorDB(dimensions=dimensions, path=path)
+        db = VectorDB(dimensions=dimensions)
         dbs.append(db)
         return db
 
