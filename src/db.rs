@@ -760,6 +760,17 @@ impl VectorDB {
 
 // Public Rust API (not exposed to Python)
 impl VectorDB {
+    /// Get the number of vectors in the database (Rust API)
+    pub fn len(&self) -> PyResult<usize> {
+        let db = self.inner.read().map_err(|e| {
+            pyo3::exceptions::PyRuntimeError::new_err(format!("Lock error: {}", e))
+        })?;
+
+        db.len().map_err(|e| {
+            pyo3::exceptions::PyRuntimeError::new_err(format!("Length failed: {}", e))
+        })
+    }
+
     /// Get database statistics (Rust API)
     pub fn get_stats(&self) -> PyResult<DBStats> {
         let db = self.inner.read().map_err(|e| {

@@ -176,7 +176,7 @@ fn info() -> String {
 /// manager.add_to_collection("embeddings", "doc1", [0.1] * 384)
 /// ```
 #[pymodule]
-fn pyruvector(_py: Python<'_>, m: &PyModule) -> PyResult<()> {
+fn _pyruvector(_py: Python<'_>, m: &PyModule) -> PyResult<()> {
     // Add version information
     m.add("__version__", env!("CARGO_PKG_VERSION"))?;
     m.add("__author__", "rUv")?;
@@ -274,24 +274,24 @@ fn pyruvector(_py: Python<'_>, m: &PyModule) -> PyResult<()> {
     m.add(
         "__doc__",
         "pyruvector - High-performance vector database with SIMD acceleration\n\n\
-         A Python binding for ruvector, providing efficient vector similarity search\n\
-         with HNSW indexing and quantization support.\n\n\
-         Features:\n\
-         - SIMD-accelerated distance calculations\n\
-         - HNSW (Hierarchical Navigable Small World) indexing\n\
-         - Quantization for memory efficiency (4-32x reduction)\n\
-         - Multi-collection support with CollectionManager\n\
-         - Advanced payload filtering with indices\n\
-         - Prometheus metrics export\n\
-         - Snapshot backup and restore\n\
-         - Graph database with Cypher queries\n\
-         - Graph Neural Networks (GNN)\n\
-         - Distributed clustering and sharding\n\
-         - Data replication\n\
-         - Neural LLM routing optimization\n\
-         - Batch operations\n\
-         - Thread-safe operations\n\n\
-         Requires Python 3.9 or higher.",
+A Python binding for ruvector, providing efficient vector similarity search\n\
+with HNSW indexing and quantization support.\n\n\
+Features:\n\
+  - SIMD-accelerated distance calculations\n\
+  - HNSW (Hierarchical Navigable Small World) indexing\n\
+  - Quantization for memory efficiency (4-32x reduction)\n\
+  - Multi-collection support with CollectionManager\n\
+  - Advanced payload filtering with indices\n\
+  - Prometheus metrics export\n\
+  - Snapshot backup and restore\n\
+  - Graph database with Cypher queries\n\
+  - Graph Neural Networks (GNN)\n\
+  - Distributed clustering and sharding\n\
+  - Data replication\n\
+  - Neural LLM routing optimization\n\
+  - Batch operations\n\
+  - Thread-safe operations\n\n\
+Requires Python 3.9 or higher.",
     )?;
 
     Ok(())

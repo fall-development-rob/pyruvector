@@ -62,6 +62,7 @@ impl From<PyRuVectorError> for PyErr {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use pyo3::Python;
 
     #[test]
     fn test_error_display() {

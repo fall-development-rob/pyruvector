@@ -1,0 +1,358 @@
+name: Performance Benchmark Suite
+
+on:
+  workflow_dispatch:
+    inputs:
+      baseline_comparison:
+        description: 'Compare against baseline (if available)'
+        required: false
+        type: boolean
+        default: true
+      upload_to_release:
+        description: 'Upload results to latest release'
+        required: false
+        type: boolean
+        default: false
+  schedule:
+    # Run weekly on Sunday at 00:00 UTC
+    - cron: '0 0 * * 0'
+
+permissions:
+  contents: write
+
+jobs:
+  benchmark-full:
+    name: Full Benchmark Suite
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-13, windows-latest]
+        python-version: ['3.11']
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: 'pip'
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Rust dependencies
+        uses: Swatinem/rust-cache@v2
+        with:
+          key: benchmark-full-${{ matrix.os }}-rust-cache
+
+      - name: Build and install pyruvector (Unix)
+        if: runner.os != 'Windows'
+        run: |
+          python -m pip install --upgrade pip
+          pip install maturin
+          maturin develop --release
+
+      - name: Build and install pyruvector (Windows)
+        if: runner.os == 'Windows'
+        shell: bash
+        run: |
+          python -m pip install --upgrade pip
+          pip install maturin
+          maturin develop --release
+
+      - name: Install benchmark dependencies
+        run: pip install pytest pytest-benchmark numpy
+
+      - name: Download baseline (if exists)
+        if: inputs.baseline_comparison
+        uses: dawidd6/action-download-artifact@v3
+        continue-on-error: true
+        with:
+          workflow: benchmark.yml
+          name: benchmark-baseline-${{ matrix.os }}
+          path: .benchmarks
+
+      - name: Run full benchmark suite
+        shell: bash
+        run: |
+          pytest benchmarks/ --benchmark-only \
+            --benchmark-json=benchmark-results-${{ matrix.os }}.json \
+            --benchmark-autosave \
+            --benchmark-save-data \
+            --benchmark-columns=min,max,mean,stddev,median,ops \
+            --benchmark-histogram=benchmark-histogram-${{ matrix.os }} \
+            --benchmark-sort=name \
+            -v
+
+      - name: Compare against baseline
+        if: inputs.baseline_comparison
+        shell: bash
+        run: |
+          if [ -f .benchmarks/baseline ]; then
+            echo "## 📊 Benchmark Comparison vs Baseline" >> comparison.md
+            echo "" >> comparison.md
+            pytest benchmarks/ --benchmark-only \
+              --benchmark-compare=baseline \
+              --benchmark-compare-fail=mean:20% >> comparison.md || true
+          else
+            echo "No baseline found for comparison" > comparison.md
+          fi
+        continue-on-error: true
+
+      - name: Upload benchmark results
+        uses: actions/upload-artifact@v4
+        with:
+          name: benchmark-results-${{ matrix.os }}
+          path: |
+            benchmark-results-${{ matrix.os }}.json
+            benchmark-histogram-${{ matrix.os }}.svg
+            comparison.md
+          retention-days: 90
+
+      - name: Save as baseline
+        uses: actions/upload-artifact@v4
+        with:
+          name: benchmark-baseline-${{ matrix.os }}
+          path: .benchmarks/
+          retention-days: 365
+
+      - name: Generate performance report
+        shell: bash
+        run: |
+          echo "# 🚀 Performance Benchmark Report" > performance-report-${{ matrix.os }}.md
+          echo "" >> performance-report-${{ matrix.os }}.md
+          echo "**Platform:** ${{ matrix.os }}" >> performance-report-${{ matrix.os }}.md
+          echo "**Python:** ${{ matrix.python-version }}" >> performance-report-${{ matrix.os }}.md
+          echo "**Date:** $(date -u)" >> performance-report-${{ matrix.os }}.md
+          echo "" >> performance-report-${{ matrix.os }}.md
+          echo "## Summary" >> performance-report-${{ matrix.os }}.md
+          echo "" >> performance-report-${{ matrix.os }}.md
+
+          if [ -f benchmark-results-${{ matrix.os }}.json ]; then
+            echo "✅ Full benchmark suite completed successfully" >> performance-report-${{ matrix.os }}.md
+            echo "" >> performance-report-${{ matrix.os }}.md
+
+            # Extract key metrics using Python
+            python3 << 'EOF' >> performance-report-${{ matrix.os }}.md
+          import json
+          import sys
+
+          try:
+              with open('benchmark-results-${{ matrix.os }}.json', 'r') as f:
+                  data = json.load(f)
+
+              benchmarks = data.get('benchmarks', [])
+              if benchmarks:
+                  print("| Benchmark | Mean (ms) | Median (ms) | Std Dev |")
+                  print("|-----------|-----------|-------------|---------|")
+
+                  for bench in benchmarks[:10]:  # Top 10
+                      name = bench.get('name', 'Unknown')
+                      stats = bench.get('stats', {})
+                      mean = stats.get('mean', 0) * 1000  # Convert to ms
+                      median = stats.get('median', 0) * 1000
+                      stddev = stats.get('stddev', 0) * 1000
+
+                      print(f"| {name} | {mean:.3f} | {median:.3f} | {stddev:.3f} |")
+              else:
+                  print("No benchmark data available")
+          except Exception as e:
+              print(f"Error processing benchmark data: {e}")
+          EOF
+
+          else
+            echo "❌ Benchmark results not available" >> performance-report-${{ matrix.os }}.md
+          fi
+
+          echo "" >> performance-report-${{ matrix.os }}.md
+          echo "## Artifacts" >> performance-report-${{ matrix.os }}.md
+          echo "" >> performance-report-${{ matrix.os }}.md
+          echo "- JSON results: \`benchmark-results-${{ matrix.os }}.json\`" >> performance-report-${{ matrix.os }}.md
+          echo "- Histogram: \`benchmark-histogram-${{ matrix.os }}.svg\`" >> performance-report-${{ matrix.os }}.md
+
+          if [ -f comparison.md ]; then
+            echo "" >> performance-report-${{ matrix.os }}.md
+            echo "## Comparison vs Baseline" >> performance-report-${{ matrix.os }}.md
+            cat comparison.md >> performance-report-${{ matrix.os }}.md
+          fi
+
+      - name: Upload performance report
+        uses: actions/upload-artifact@v4
+        with:
+          name: performance-report-${{ matrix.os }}
+          path: performance-report-${{ matrix.os }}.md
+          retention-days: 90
+
+      - name: Add to job summary
+        if: always()
+        shell: bash
+        run: |
+          if [ -f performance-report-${{ matrix.os }}.md ]; then
+            cat performance-report-${{ matrix.os }}.md >> $GITHUB_STEP_SUMMARY
+          fi
+
+  # Combine results and create summary
+  benchmark-summary:
+    name: Generate Combined Summary
+    runs-on: ubuntu-latest
+    needs: benchmark-full
+    if: always()
+    steps:
+      - name: Download all benchmark results
+        uses: actions/download-artifact@v4
+        with:
+          pattern: benchmark-results-*
+          path: results/
+
+      - name: Download all performance reports
+        uses: actions/download-artifact@v4
+        with:
+          pattern: performance-report-*
+          path: reports/
+
+      - name: Create combined summary
+        run: |
+          echo "# 📊 Combined Performance Benchmark Report" > BENCHMARK_SUMMARY.md
+          echo "" >> BENCHMARK_SUMMARY.md
+          echo "**Workflow Run:** ${{ github.run_number }}" >> BENCHMARK_SUMMARY.md
+          echo "**Triggered by:** ${{ github.event_name }}" >> BENCHMARK_SUMMARY.md
+          echo "**Date:** $(date -u)" >> BENCHMARK_SUMMARY.md
+          echo "" >> BENCHMARK_SUMMARY.md
+
+          echo "## Platform Results" >> BENCHMARK_SUMMARY.md
+          echo "" >> BENCHMARK_SUMMARY.md
+
+          for report in reports/*/performance-report-*.md; do
+            if [ -f "$report" ]; then
+              echo "---" >> BENCHMARK_SUMMARY.md
+              echo "" >> BENCHMARK_SUMMARY.md
+              cat "$report" >> BENCHMARK_SUMMARY.md
+              echo "" >> BENCHMARK_SUMMARY.md
+            fi
+          done
+
+          echo "" >> BENCHMARK_SUMMARY.md
+          echo "## Artifacts" >> BENCHMARK_SUMMARY.md
+          echo "" >> BENCHMARK_SUMMARY.md
+          echo "All benchmark results, histograms, and comparisons are available in the workflow artifacts." >> BENCHMARK_SUMMARY.md
+
+      - name: Upload combined summary
+        uses: actions/upload-artifact@v4
+        with:
+          name: benchmark-summary
+          path: BENCHMARK_SUMMARY.md
+          retention-days: 90
+
+      - name: Upload to release (if requested)
+        if: inputs.upload_to_release && github.event_name == 'workflow_dispatch'
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: latest
+          files: |
+            BENCHMARK_SUMMARY.md
+            results/**/*.json
+            reports/**/*.md
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # Optional: Performance regression check
+  regression-check:
+    name: Performance Regression Check
+    runs-on: ubuntu-latest
+    needs: benchmark-full
+    if: inputs.baseline_comparison
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download current results
+        uses: actions/download-artifact@v4
+        with:
+          pattern: benchmark-results-*
+          path: current/
+
+      - name: Download baseline
+        uses: dawidd6/action-download-artifact@v3
+        continue-on-error: true
+        with:
+          workflow: benchmark.yml
+          name: benchmark-baseline-ubuntu-latest
+          path: baseline/
+
+      - name: Compare and check for regressions
+        run: |
+          python3 << 'EOF'
+          import json
+          import sys
+          import os
+
+          def load_benchmarks(filepath):
+              try:
+                  with open(filepath, 'r') as f:
+                      data = json.load(f)
+                  return {b['name']: b['stats'] for b in data.get('benchmarks', [])}
+              except Exception as e:
+                  print(f"Error loading {filepath}: {e}")
+                  return {}
+
+          # Find current and baseline files
+          current_file = None
+          for root, dirs, files in os.walk('current'):
+              for f in files:
+                  if f.endswith('.json'):
+                      current_file = os.path.join(root, f)
+                      break
+
+          baseline_file = None
+          for root, dirs, files in os.walk('baseline'):
+              for f in files:
+                  if f.endswith('.json'):
+                      baseline_file = os.path.join(root, f)
+                      break
+
+          if not current_file or not baseline_file:
+              print("Missing benchmark files, skipping regression check")
+              sys.exit(0)
+
+          current = load_benchmarks(current_file)
+          baseline = load_benchmarks(baseline_file)
+
+          regressions = []
+          THRESHOLD = 0.25  # 25% regression threshold
+
+          for name, curr_stats in current.items():
+              if name in baseline:
+                  base_stats = baseline[name]
+                  curr_mean = curr_stats.get('mean', 0)
+                  base_mean = base_stats.get('mean', 0)
+
+                  if base_mean > 0:
+                      change = (curr_mean - base_mean) / base_mean
+
+                      if change > THRESHOLD:
+                          regressions.append({
+                              'name': name,
+                              'baseline': base_mean * 1000,
+                              'current': curr_mean * 1000,
+                              'change': change * 100
+                          })
+
+          if regressions:
+              print("⚠️ Performance Regressions Detected!")
+              print("")
+              print("| Benchmark | Baseline (ms) | Current (ms) | Change |")
+              print("|-----------|---------------|--------------|--------|")
+
+              for reg in regressions:
+                  print(f"| {reg['name']} | {reg['baseline']:.3f} | {reg['current']:.3f} | +{reg['change']:.1f}% |")
+
+              print("")
+              print(f"Found {len(regressions)} regression(s) exceeding {THRESHOLD*100}% threshold")
+              # Note: Not failing the workflow, just reporting
+          else:
+              print("✅ No significant performance regressions detected")
+          EOF

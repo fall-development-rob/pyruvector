@@ -54,7 +54,6 @@ from ._pyruvector import (
     # Snapshot
     SnapshotManager,
     SnapshotInfo,
-    SnapshotCompression,
 
     # Graph database
     GraphDB,
@@ -67,13 +66,15 @@ from ._pyruvector import (
 
     # GNN (Graph Neural Networks)
     GNNModel,
-    GNNLayer,
+    BasicGNNLayer,
+    RuvectorLayer,
     GNNConfig,
-    TrainConfig,
+    PyTrainConfig,
     OptimizerType,
     SchedulerType,
     ReplayBuffer,
     Tensor,
+    TrainingMetrics as GNNTrainingMetrics,
 
     # Cluster/Distributed
     ClusterManager,
@@ -94,13 +95,24 @@ from ._pyruvector import (
     Candidate,
     RoutingRequest,
     RoutingResponse,
-    RoutingMetrics,
+    RoutingDecision,
+    VectorDatabase,
     TrainingDataset,
+    TrainingConfig as RouterTrainingConfig,
+
+    # GNN utility functions
+    cosine_similarity,
+    info_nce_loss,
 
     # Module functions
     version,
     info,
 )
+
+# Aliases for backward compatibility
+GNNLayer = BasicGNNLayer
+TrainConfig = PyTrainConfig
+RoutingMetrics = GNNTrainingMetrics  # Router metrics
 
 __all__ = [
     # Core
@@ -133,7 +145,6 @@ __all__ = [
     # Snapshot
     "SnapshotManager",
     "SnapshotInfo",
-    "SnapshotCompression",
 
     # Graph database
     "GraphDB",
@@ -147,12 +158,18 @@ __all__ = [
     # GNN
     "GNNModel",
     "GNNLayer",
+    "BasicGNNLayer",
+    "RuvectorLayer",
     "GNNConfig",
     "TrainConfig",
+    "PyTrainConfig",
+    "GNNTrainingMetrics",
     "OptimizerType",
     "SchedulerType",
     "ReplayBuffer",
     "Tensor",
+    "cosine_similarity",
+    "info_nce_loss",
 
     # Cluster
     "ClusterManager",
@@ -173,8 +190,11 @@ __all__ = [
     "Candidate",
     "RoutingRequest",
     "RoutingResponse",
+    "RoutingDecision",
     "RoutingMetrics",
+    "VectorDatabase",
     "TrainingDataset",
+    "RouterTrainingConfig",
 
     # Functions
     "version",
