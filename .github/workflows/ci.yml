@@ -86,7 +86,7 @@ jobs:
         uses: PyO3/maturin-action@v1
         with:
           target: x86_64
-          args: --release --out dist --find-interpreter
+          args: --release --out dist -i python${{ matrix.python-version }}
           sccache: 'true'
           manylinux: auto
 
@@ -142,7 +142,7 @@ jobs:
         uses: PyO3/maturin-action@v1
         with:
           target: aarch64
-          args: --release --out dist --find-interpreter
+          args: --release --out dist -i python${{ matrix.python-version }}
           sccache: 'true'
           manylinux: auto
 
@@ -182,7 +182,7 @@ jobs:
         uses: PyO3/maturin-action@v1
         with:
           target: x86_64
-          args: --release --out dist --find-interpreter
+          args: --release --out dist -i python${{ matrix.python-version }}
           sccache: 'true'
 
       - name: Install wheel
@@ -237,7 +237,7 @@ jobs:
         uses: PyO3/maturin-action@v1
         with:
           target: aarch64-apple-darwin
-          args: --release --out dist --find-interpreter
+          args: --release --out dist -i python${{ matrix.python-version }}
           sccache: 'true'
 
       - name: Install wheel
@@ -292,7 +292,7 @@ jobs:
         uses: PyO3/maturin-action@v1
         with:
           target: x64
-          args: --release --out dist --find-interpreter
+          args: --release --out dist -i python${{ matrix.python-version }}
           sccache: 'true'
 
       - name: Install wheel
