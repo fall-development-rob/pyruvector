@@ -69,7 +69,7 @@ jobs:
 
       - name: Download baseline (if exists)
         if: inputs.baseline_comparison
-        uses: dawidd6/action-download-artifact@v3
+        uses: dawidd6/action-download-artifact@v11
         continue-on-error: true
         with:
           workflow: benchmark.yml
@@ -276,7 +276,7 @@ jobs:
           path: current/
 
       - name: Download baseline
-        uses: dawidd6/action-download-artifact@v3
+        uses: dawidd6/action-download-artifact@v11
         continue-on-error: true
         with:
           workflow: benchmark.yml
