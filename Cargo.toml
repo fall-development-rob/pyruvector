@@ -59,7 +59,7 @@ ruvector-scipix = { version = "0.1.16", optional = true, features = ["ocr", "pre
 # ============================================
 # Additional dependencies
 # ============================================
-prometheus = "0.13"
+prometheus = "0.14"
 lazy_static = "1.5"
 tokio = { version = "1.0", features = ["rt-multi-thread", "sync", "fs"] }
 async-trait = "0.1"
